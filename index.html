@@ -192,11 +192,26 @@
     }
 
     // Extract image URL from formulas like =IMAGE("url") or plain text URLs
-    function cleanImageUrl(raw) {
-      if (!raw) return '';
-      const match = raw.match(/=IMAGE\("([^"]+)"\)/i) || raw.match(/https?:\/\/[^\s"']+/i);
-      return match ? match[1] || match[0] : raw;
+// Handles direct image URLs, =IMAGE() formulas, and Google Drive sharing links
+function cleanImageUrl(raw) {
+  if (!raw) return '';
+  let url = raw;
+
+  // Extract URL if wrapped in =IMAGE("...") formula or text block
+  const match = raw.match(/=IMAGE\("([^"]+)"\)/i) || raw.match(/https?:\/\/[^\s"']+/i);
+  if (match) url = match[1] || match[0];
+
+  // Convert Google Drive view/share links into a direct displayable image URL
+  if (url.includes('drive.google.com')) {
+    // Extract file ID from /d/FILE_ID/ or id=FILE_ID
+    const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (idMatch && idMatch[1]) {
+      return `https://lh3.googleusercontent.com/d/${idMatch[1]}`;
     }
+  }
+
+  return url;
+}
 
     // --- FETCH & LOAD DATA ---
     async function fetchProducts() {
